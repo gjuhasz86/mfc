@@ -1,1 +1,6 @@
-.idea
+/.idea/
+/target/
+/dist/
+/mforecast-web/js/
+/project/project/
+/project/target/
