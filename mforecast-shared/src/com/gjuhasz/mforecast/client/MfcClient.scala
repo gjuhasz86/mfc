@@ -181,39 +181,14 @@ object MfcClient {
   def genC3ChartInput(as: js.Array[mjs.Allocation], cfs: js.Array[Cashflow]): js.Array[Any] = {
     val cats = as.map(_.category.name).distinct
     val months = cfs.collect { case e: Earning => e }.map(_.date.withDayOfMonth(1)).distinct.sorted
-//    val months = as.map(_.allocated).distinct.sorted
+    val groups = as.groupBy(a => (a.category.name, a.allocated.withDayOfMonth(1)))
 
     val allSeries: js.Array[js.Array[Any]] = cats.map { c =>
       val series = months.map { m =>
-        as.filter(_.allocated.withDayOfMonth(1) == m).filter(_.category.name == c).map(_.amount).sum
+        groups.get((c, m)).map(_.map(_.amount).sum).getOrElse(0)
       }
       (c: Any) +: series
     }
-
-//    val res: js.Array[js.Array[Any]] = months.map { m =>
-//      val alloc = cats.map { c =>
-//        as.filter(_.allocated.withDayOfMonth(1) == m).filter(_.category.name == c).map(_.amount).sum
-//      }
-//      val spend = cats.map { c =>
-//
-//        cfs.filter(_.date.withDayOfMonth(1) == m.withDayOfMonth(1))
-//          .collect { case s: Spending => s }
-//          .filter(_.category.name == c)
-//          .map(_.amount)
-//          .sum
-//      }
-//
-//      val earn = cfs.filter(_.date.withDayOfMonth(1) == m.withDayOfMonth(1))
-//        .collect { case e: Earning => e }
-//        .map(_.amount)
-//        .sum
-//
-//      val unalloc = earn - alloc.sum
-//
-//      m.toString +: alloc :+ unalloc  //(alloc ++ spend)
-//    }
-//
-//    val header: js.Array[Any] = "Categories" +: cats :+ "Unallocated" //(cats ++ cats)
 
     js.Array(months.map(_.toString), allSeries)
   }

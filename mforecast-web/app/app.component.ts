@@ -61,13 +61,15 @@ export class AppComponent {
         let cfs0: Cashflow[][] = cfspecs.map(c => Mfc.rollout(c, start, period));
         let cfs: Cashflow[] = [].concat.apply([], cfs0);
         let req = Mfc.makeRequest(cfs);
-        console.log('Sending');
-        console.log(req);
+        console.log(`Sending ${new Date()}`);
         return this.mfcSvc.plan(req).map(r => [cfs, r]);
     }
 
     private processResp(cfs: Cashflow[], resp: string): [Cashflow[], Allocation[]] {
-        return [cfs, Mfc.parseResponse(resp)];
+        console.log(`Received  ${new Date()}`);
+        let res: [Cashflow[], Allocation[]] = [cfs, Mfc.parseResponse(resp)];
+        console.log(`Parsed  ${new Date()}`);
+        return res;
     }
 
     public onCfChange(cfs: CashflowSpec[]): void {
@@ -85,7 +87,7 @@ export class AppComponent {
 
     public drawC3Chart(cdata: any[]): void {
         console.log(cdata);
-        c3.generate({
+        let config: any = {
             bindto: '#c3chart',
             color: {
                 pattern: [
@@ -146,12 +148,24 @@ export class AppComponent {
                 x: {
                     type: 'categories',
                     categories: cdata[0],
+                    tick: {
+                        outer: false
+                    }
                 },
             },
             subchart: {
-                show: true
+                show: true,
+                axis: {
+                    x: {
+                        show: false
+                    }
+                }
             }
-        });
+        };
+        this.chart = c3.generate(config);
+        console.log(this.chart);
+        console.log(JSON.stringify(config));
+        this.chart.zoom([0, Math.min(cdata[0].length, 24)]);
     }
 
 }
