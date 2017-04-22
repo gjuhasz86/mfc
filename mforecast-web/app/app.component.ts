@@ -15,12 +15,15 @@ declare var google: any;
 @Component({
     selector: 'my-app',
     template: `<h1>Money Forecast</h1>
-    <div id="c3chart"></div>
-    <cashflow-input-list
-        (cashflows)="onCfChange($event)"
-        (start)="onStartChange($event)"
-        (forecastPeriod)="onPeriodChange($event)"></cashflow-input-list>
-    <button type="button" (click)="planClick.next(0)">Plan</button>
+
+    <div>
+      <div id="c3chart"></div>
+      <cashflow-input-list
+          (cashflows)="onCfChange($event)"
+          (start)="onStartChange($event)"
+          (forecastPeriod)="onPeriodChange($event)"></cashflow-input-list>
+      <button type="button" (click)="planClick.next(0)">Plan</button>
+    </div>
     `,
 })
 export class AppComponent {

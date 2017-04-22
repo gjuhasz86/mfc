@@ -10,28 +10,54 @@ import {BehaviorSubject} from 'rxjs/BehaviorSubject';
     selector: 'cashflow-input-list',
     template: `
       <div>
-        <span>Start date:</span>
-        <input #tbStart type="text"
-               [ngModel]="start|async" size="20"
-               (keyup)="start.next(tbStart.value)">
-
-        <span>Forecast preriod:</span>
-        <input #tbPeriod type="text"
-               [ngModel]="forecastPeriod|async" size="20"
-               (keyup)="forecastPeriod.next(tbPeriod.value)">
-
-        <div *ngFor="let s of (texts|async); let i = index; trackBy: trackByFn">
-          <input #tbCashflow type="text"
-                 [ngModel]="s" size="60"
-                 (keyup)="handleChange(i,tbCashflow.value)">
-          <button type="button" (click)="handleAdd(i)">+</button>
-          <button type="button" (click)="handleRemove(i)">x</button>
-          <span>{{parse(s)}}</span>
+        <div class="input-box">
+          <span>Start date:</span>
+          <input #tbStart type="text"
+                 [ngModel]="start|async" size="20"
+                 (keyup)="start.next(tbStart.value)">
         </div>
-        <div>
+
+        <div class="input-box">
+          <span>Forecast preriod:</span>
+          <input #tbPeriod type="text"
+                 [ngModel]="forecastPeriod|async" size="20"
+                 (keyup)="forecastPeriod.next(tbPeriod.value)">
+        </div>
+
+        <div class="flex">
+          <div class="cashflow-box">
           <textarea #taCashflow type="text" rows="15" cols="60"
                     [ngModel]="bulkTexts|async"
                     (keyup)="handleBulkChange(taCashflow.value)"></textarea>
+          </div>
+          <div class="cashflow-box divTable">
+            <div class="divRow"
+                 *ngFor="let c of (preCashflows|async)">
+              <div *ngIf="c.empty">empty</div>
+              <div *ngIf="!c.empty && !c.valid">invalid</div>
+              <div *ngIf="c.valid" class="divCell verb">
+                <span *ngIf="c.valid && c.earn" class="earn">Earn</span>
+                <span *ngIf="c.valid && !c.earn" class="spend">Spend</span>
+              </div>
+              <div *ngIf="c.valid" class="divCell amount">
+                <span *ngIf="c.valid && c.earn" class="earn">{{c.parsed.amount}}</span>
+                <span *ngIf="c.valid && !c.earn" class="spend">{{c.parsed.amount}}</span>
+              </div>
+              <div *ngIf="c.valid" class="divCell fill">on</div>
+              <div *ngIf="c.valid" class="divCell cat">{{c.parsed.catOrAcc}}</div>
+              <div *ngIf="c.valid" class="divCell fill">
+                <span *ngIf="c.hasDue">in</span></div>
+              <div *ngIf="c.valid" class="divCell due">
+                <span *ngIf="c.hasDue">
+                  {{c.parsed.dueValue}} {{c.duePlural ? c.parsed.dueUnit.plural : c.parsed.dueUnit.singular}}</span>
+                <span *ngIf="!c.hasDue">today</span>
+              </div>
+              <div *ngIf="c.valid" class="divCell fill">repeated every</div>
+              <div *ngIf="c.valid" class="divCell period">
+                {{c.parsed.periodValue}} {{c.perPlural ? c.parsed.periodUnit.plural : c.parsed.periodUnit.singular}}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -57,6 +83,8 @@ export class CashflowInputListComponent {
 
     texts: Observable<string[]> = this.changes
                                       .scan(this.combineChanges, []);
+
+    preCashflows = this.texts.map(xs => xs.map(x => this.parse(x)));
 
     bulkTexts = this.texts.map(ts => ts.join('\n'));
 
@@ -96,16 +124,20 @@ export class CashflowInputListComponent {
         return i;
     }
 
-    parse(str: string): string {
-        if (str === '') {
-            return '';
-        }
-        let p = Mfc.parseCashflow(str);
-        if (typeof p === 'undefined') {
-            return `-invalid- [${str}]`;
-        } else {
-            return `${p.verb} ${p.amount} on ${p.catOrAcc} every ${p.periodValue} ${p.periodUnit.plural}`;
-        }
+    parse(x: string): any {
+        let parsed = Mfc.parseCashflow(x);
+        let valid = !(parsed == null);
+        let hasDue = valid && !(parsed.dueValue == null);
+        return {
+            str: x,
+            empty: x === '',
+            parsed: parsed,
+            valid: valid,
+            perPlural: valid && parsed.periodValue !== 1,
+            earn: valid && parsed.verb === 'earn',
+            hasDue: hasDue,
+            duePlural: hasDue && parsed.dueValue !== 1,
+        };
     }
 
     combineChanges(acc: string[], f: ((ss: string[]) => string[])): string[] {

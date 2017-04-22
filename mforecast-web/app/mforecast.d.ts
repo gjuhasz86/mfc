@@ -40,6 +40,8 @@ declare module 'mforecast' {
         verb: string;
         amount: number;
         catOrAcc: string;
+        dueValue: number;
+        dueUnit: PeriodUnit;
         periodValue: number;
         periodUnit: PeriodUnit;
     }
