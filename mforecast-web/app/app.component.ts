@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component} from '@angular/core';
 import {Allocation, Cashflow, CashflowSpec, Mfc} from 'mforecast';
 import {MfcReqService} from './mfc-req.service';
 import {Observable} from 'rxjs/Observable';
@@ -9,24 +9,21 @@ import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/let';
 import 'rxjs/add/operator/withLatestFrom';
-import {AmChartsService} from 'amcharts3-angular2';
+import * as c3 from 'c3';
 
 declare var google: any;
 @Component({
     selector: 'my-app',
     template: `<h1>Money Forecast</h1>
+    <div id="c3chart"></div>
     <cashflow-input-list
         (cashflows)="onCfChange($event)"
         (start)="onStartChange($event)"
         (forecastPeriod)="onPeriodChange($event)"></cashflow-input-list>
     <button type="button" (click)="planClick.next(0)">Plan</button>
-    <div id="chartdiv" [style.width.%]="100" [style.height.px]="500"></div>
-    <div id="chart_div"></div>
-    <div *ngFor="let a of (plan | async)">{{a.allocated}} - {{a.expiry}} [{{a.category.name}}] {{a.amount}}</div>
-    <pre>{{chartData | async | json}}</pre>
     `,
 })
-export class AppComponent implements OnInit {
+export class AppComponent {
 
     private cashflowsSpecSubj = new ReplaySubject<CashflowSpec[]>(1);
     private startSubj: ReplaySubject<string> = new ReplaySubject<string>(1);
@@ -52,58 +49,11 @@ export class AppComponent implements OnInit {
 
 
     private chart: any;
-    private chartData = this.plan0.map(tup => Mfc.genChartInput(tup[1], tup[0]));
-    private amChartData = this.plan0.map(tup => Mfc.genAmChartInput(tup[1], tup[0]));
+    private c3ChartData = this.plan0.map(tup => Mfc.genC3ChartInput(tup[1], tup[0]));
 
-    constructor(private mfcSvc: MfcReqService,
-                private AmCharts: AmChartsService) {
-        // this.chartData
-        //     .subscribe(cData => this.drawChart(cData));
-        this.amChartData
-            .subscribe(cData => this.drawAmChart(cData));
-    }
-
-    ngOnInit() {
-        this.chart = this.AmCharts.makeChart('chartdiv', {
-            "type": "serial",
-            "categoryField": "category",
-            "sequencedAnimation": false,
-            "theme": "default",
-            "categoryAxis": {
-                "gridPosition": "start"
-            },
-            "chartScrollbar": {
-                "enabled": true
-            },
-            "trendLines": [],
-            "graphs": [],
-            "guides": [],
-            "valueAxes": [
-                {
-                    "id": "ValueAxis-1",
-                    "stackType": "regular",
-                    "title": "Axis title"
-                }
-            ],
-            "allLabels": [
-                {
-                    "id": "Label-1"
-                }
-            ],
-            "balloon": {},
-            "legend": {
-                "enabled": true,
-                "useGraphSettings": true
-            },
-            "titles": [
-                {
-                    "id": "Title-1",
-                    "size": 15,
-                    "text": "Chart Title"
-                }
-            ],
-            "dataProvider": []
-        });
+    constructor(private mfcSvc: MfcReqService) {
+        this.c3ChartData
+            .subscribe(cData => this.drawC3Chart(cData));
     }
 
     makeReq(cfspecs: CashflowSpec[], start: string, period: string): Observable<[Cashflow[], string]> {
@@ -133,55 +83,75 @@ export class AppComponent implements OnInit {
         this.periodSubj.next(s);
     }
 
-    public drawChart(cData: any[][]): void {
-        // Create the data table.
-        let data = google.visualization.arrayToDataTable(cData);
-
-        // Set chart options
-        let options = {
-            height: 800,
-            legend: {position: 'right', maxLines: 3},
-            bar: {groupWidth: '75%'},
-            isStacked: true,
-            explorer: {
-                axis: 'horizontal',
-                keepInBounds: true,
-                actions: ['dragToZoom', 'rightClickToReset'],
-                maxZoomOut: 2,
-                maxZoomIn: 4.0
+    public drawC3Chart(cdata: any[]): void {
+        console.log(cdata);
+        c3.generate({
+            bindto: '#c3chart',
+            color: {
+                pattern: [
+                    // https://github.com/internalfx/distinct-colors
+                    // http://tools.medialab.sciences-po.fr/iwanthue/
+                    // // Generate colors (as Chroma.js objects)
+                    // var colors = paletteGenerator.generate(
+                    //     20, // Colors
+                    //     function(color){ // This function filters valid colors
+                    //         var hcl = color.hcl();
+                    //         return hcl[0]>=0 && hcl[0]<=300
+                    //             && hcl[1]>=35 && hcl[1]<=100
+                    //             && hcl[2]>=55 && hcl[2]<=80;
+                    //     },
+                    //     true, // Using Force Vector instead of k-Means
+                    //     50, // Steps (quality)
+                    //     false, // Ultra precision
+                    //     'Default' // Color distance type (colorblindness)
+                    // );
+                    // // Sort colors by differenciation first
+                    // colors = paletteGenerator.diffSort(colors, 'Default');
+                    "#f2bf33",
+                    "#6c76f9",
+                    "#71de52",
+                    "#e94a5e",
+                    "#00be6f",
+                    "#f381a6",
+                    "#69de71",
+                    "#2dbaff",
+                    "#c3cf2a",
+                    "#c96945",
+                    "#71db9a",
+                    "#ff9258",
+                    "#3b962f",
+                    "#ffa37e",
+                    "#6c9500",
+                    "#eaae82",
+                    "#c4cd72",
+                    "#a67c45",
+                    "#acc281",
+                    "#918a4b"
+                ]
+            },
+            size: {
+                height: 600
+            },
+            data: {
+                columns: cdata[1],
+                type: 'bar',
+                groups: [cdata[1].map((x: any) => x[0])]
+            },
+            bar: {
+                width: {
+                    ratio: 0.8 // this makes bar width 50% of length between ticks
+                }
+            },
+            axis: {
+                x: {
+                    type: 'categories',
+                    categories: cdata[0],
+                },
+            },
+            subchart: {
+                show: true
             }
-        };
-
-        // Instantiate and draw our chart, passing in some options.
-        let chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));
-        chart.draw(data, options);
-
-    }
-
-    public drawAmChart(cdata: any[]): void {
-        console.log(JSON.stringify(cdata[1]));
-        console.log(JSON.stringify(cdata[0].map((c: any) => ({
-            "balloonText": "[[title]] of [[category]]:[[value]]",
-            "fillAlphas": 1,
-            "id": c,
-            "title": c,
-            "type": "column",
-            "valueField": c
-        }))));
-        this.AmCharts.updateChart(this.chart, () => {
-            // Change whatever properties you want, add event listeners, etc.
-            this.chart.dataProvider = cdata[1];
-            this.chart.graphs = cdata[0].map((c: any) => ({
-                "balloonText": "[[title]] of [[category]]:[[value]]",
-                "fillAlphas": 1,
-                "id": c,
-                "title": c,
-                "type": "column",
-                "valueField": c
-            }));
-
         });
-
     }
 
 }

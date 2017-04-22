@@ -20,6 +20,8 @@ declare module 'mforecast' {
         export function genChartInput(as: Allocation[], cfs: Cashflow[]): any[][];
 
         export function genAmChartInput(as: Allocation[], cfs: Cashflow[]): any[];
+
+        export function genC3ChartInput(as: Allocation[], cfs: Cashflow[]): any[];
     }
     export interface Allocation {
         allocated: Date;

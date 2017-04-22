@@ -27,8 +27,9 @@
             // other libraries
             'rxjs': 'npm:rxjs',
             'amcharts3-angular2': 'node_modules/amcharts3-angular2',
-            'angular-in-memory-web-api': 'npm:angular-in-memory-web-api/bundles/in-memory-web-api.umd.js'
-
+            'angular-in-memory-web-api': 'npm:angular-in-memory-web-api/bundles/in-memory-web-api.umd.js',
+            c3: 'node_modules/c3/c3.js',
+            d3: 'node_modules/d3/d3.js'
         },
         meta: {
             'node_modules/mforecast-shared/mforecast-shared.js': {
