@@ -62,6 +62,7 @@ export class CashflowInputListComponent {
 
 
     @Output() cashflows: Observable<CashflowSpec[]> = this.texts
+                                                          .map(xs => xs.filter(x => x !== ''))
                                                           .map(xs => xs.map(x => Mfc.parseCashflow(x)))
                                                           .filter(xs => this.allValid(xs));
 
@@ -96,6 +97,9 @@ export class CashflowInputListComponent {
     }
 
     parse(str: string): string {
+        if (str === '') {
+            return '';
+        }
         let p = Mfc.parseCashflow(str);
         if (typeof p === 'undefined') {
             return `-invalid- [${str}]`;
