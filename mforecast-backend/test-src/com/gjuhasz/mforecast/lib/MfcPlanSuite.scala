@@ -1,5 +1,6 @@
 package com.gjuhasz.mforecast.lib
 
+import com.gjuhasz.mforecast.shared.lib.Syntax.Dsl
 import com.gjuhasz.mforecast.shared.lib.Utils._
 import com.gjuhasz.mforecast.shared.model._
 import org.scalatest.FunSuite
@@ -111,6 +112,21 @@ class MfcPlanSuite extends FunSuite {
     )
 
     assert(mfc.plan(jan01, cashflows) == expected)
+  }
+
+  test("It should not throw StackOverflowError when the calculation period is long") {
+    val start = "2017-01-10".d
+    val forecastPeriod = 10.years
+    val dsl = Dsl(start, forecastPeriod)
+    import dsl._
+
+    val cashflows: List[Cashflow] = List(
+      spend { 100 } on { Rent } due_in { 1.months } and_every { 1.month },
+      spend { 200 } on { Food } due_in { 1.months } and_every { 1.month },
+      earn { 300 } on { Combined } due_in { 0.day } and_every { 1.month }
+    ).flatten
+
+    Mfc.plan(start, cashflows, Current, Map().withDefaultValue(0))
   }
 
 

@@ -57,24 +57,18 @@ object Mfc {
 
         assert(allocations.size % earnings.size == 0, "Allocations' size should be the multiple of the earnigns' size")
 
-
-        val newEarnings = (Stream.continually(earnings).flatten zip allocations).toList.map {
-          case ((earning, unallocated), allc) =>
-            (earning, unallocated - allc.amount)
+        // the n-th allocation corresponds to the (n mod earnings.size)-th earning
+        val allocationMatrix = allocations.grouped(earnings.size).toList.transpose
+        val newEarnings = (earnings zip allocationMatrix).map {
+          case ((earning, unallocated), allocs) =>
+            (earning, unallocated - allocs.map(_.amount).sum)
         }
-//        val newEarnings = earnings.map { case (earning, unallocated) =>
-//          val allcd = allocations
-//            .filter(_.allocated == earning.date)
-//            .filter(_.account == earning.account)
-//            .map(_.amount).sum
-//          (earning, unallocated - allcd)
-//        }
 
         initial ::: allocations ::: plan(date, newEarnings, spendingTail, defaultAccount, allocated)
     }
 
   // plans for a single category
-  // guarantees that the size of the result will be the same as the size of the earnings
+  // guarantees that the size of the result will be a multiple of the size of the earnings
   def plan(
     date: LocalDate,
     earnings: List[(Earning, Int)],
