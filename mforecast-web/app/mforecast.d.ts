@@ -50,5 +50,9 @@ declare module 'mforecast' {
         singular: string;
         plural: string;
     }
-    export interface Cashflow {}
+    export interface Cashflow {
+        date: string;
+        amount: number;
+        catOrAcc: string;
+    }
 }

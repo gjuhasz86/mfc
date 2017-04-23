@@ -1,5 +1,5 @@
 import {Component, Output} from '@angular/core';
-import {CashflowSpec, Mfc} from 'mforecast';
+import {Cashflow, CashflowSpec, Mfc} from 'mforecast';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/scan';
 import 'rxjs/add/observable/combineLatest';
@@ -18,7 +18,7 @@ import {BehaviorSubject} from 'rxjs/BehaviorSubject';
         </div>
 
         <div class="input-box">
-          <span>Forecast preriod:</span>
+          <span>Forecast period:</span>
           <input #tbPeriod type="text"
                  [ngModel]="forecastPeriod|async" size="20"
                  (keyup)="forecastPeriod.next(tbPeriod.value)">
@@ -59,6 +59,18 @@ import {BehaviorSubject} from 'rxjs/BehaviorSubject';
             </div>
           </div>
         </div>
+        <div>
+          <div class="cashflow-box divTable">
+            <div class="divRow" *ngFor="let c of (rolled|async)">
+              <div class="divCell">{{c.date}}</div>
+              <div class="divCell">{{c.catOrAcc}}</div>
+              <div class="divCell amount">
+                <span *ngIf="c.earn" class="earn">{{c.amount}}</span>
+                <span *ngIf="!c.earn" class="spend">{{c.amount}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
     `
@@ -94,12 +106,36 @@ export class CashflowInputListComponent {
                                                           .map(xs => xs.map(x => Mfc.parseCashflow(x)))
                                                           .filter(xs => this.allValid(xs));
 
+
     start0 = new BehaviorSubject<string>(this.today());
     @Output() start = this.start0.filter(x => Mfc.validateLocalDate(x));
 
 
     forecastPeriod0 = new BehaviorSubject<string>('10y');
     @Output() forecastPeriod = this.forecastPeriod0.filter(x => Mfc.validatePeriod(x));
+
+    rolled = Observable.combineLatest(this.cashflows, this.start, this.forecastPeriod,
+        (sp, st, p) => ({specs: sp, start: st, per: p}))
+                       .map(xs => this.rollout(xs.specs, xs.start, xs.per));
+
+    private rollout(specs: CashflowSpec[], start: string, per: string): Cashflow[] {
+        let cfs0: Cashflow[][] = specs.map(c => Mfc.rollout(c, start, per));
+        let cfs: Cashflow[] = [].concat.apply([], cfs0);
+        let res = cfs.map(c => this.mapCfToNative(c));
+        return res.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+    }
+
+    private mapCfToNative(c: any): Cashflow {
+        let earn = !(c.account$1 == null);
+        let res = {
+            date: c.date$1.toString(),
+            earn: earn,
+            catOrAcc: earn ? c.account$1.name$1.toString() : c.category$1.name$1.toString(),
+            amount: c.amount$1
+        };
+
+        return res;
+    }
 
     private today(): string {
         let date = new Date();

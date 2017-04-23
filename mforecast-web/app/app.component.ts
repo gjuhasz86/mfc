@@ -18,11 +18,11 @@ declare var google: any;
 
     <div>
       <div id="c3chart"></div>
+      <button type="button" (click)="planClick.next(0)">Plan</button>
       <cashflow-input-list
           (cashflows)="onCfChange($event)"
           (start)="onStartChange($event)"
           (forecastPeriod)="onPeriodChange($event)"></cashflow-input-list>
-      <button type="button" (click)="planClick.next(0)">Plan</button>
     </div>
     `,
 })
