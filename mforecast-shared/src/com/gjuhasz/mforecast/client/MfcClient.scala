@@ -180,7 +180,8 @@ object MfcClient {
 
   def genC3ChartInput(as: js.Array[mjs.Allocation], cfs: js.Array[Cashflow]): js.Array[Any] = {
     val cats = as.map(_.category.name).distinct
-    val months = cfs.collect { case e: Earning => e }.map(_.date.withDayOfMonth(1)).distinct.sorted
+    //    val months = cfs.collect { case e: Earning => e }.map(_.date.withDayOfMonth(1)).distinct.sorted
+    val months = as.map(_.allocated.withDayOfMonth(1)).distinct.sorted
     val groups = as.groupBy(a => (a.category.name, a.allocated.withDayOfMonth(1)))
 
     val allSeries: js.Array[js.Array[Any]] = cats.map { c =>
@@ -224,11 +225,9 @@ object MfcClient {
     js.Array(cats :+ "Unallocated", res)
   }
 
-  def makeRequest(cashflows: js.Array[Cashflow]): String = {
-    val start = "2017-01-01".d
-    val forecastPeriod = 10.years
+  def makeRequest(cashflows: js.Array[Cashflow], start: String): String = {
     val defaultAccount = Account("Default")
-    val mfcArgs = MfcArgs(start, cashflows.toList, defaultAccount, Map())
+    val mfcArgs = MfcArgs(start.d, cashflows.toList, defaultAccount, Map())
     mfcArgs.asJson.noSpaces
   }
 

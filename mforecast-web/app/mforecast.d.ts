@@ -15,7 +15,7 @@ declare module 'mforecast' {
 
         export function rollout(c: CashflowSpec, start: string, period: string): Cashflow[];
 
-        export function makeRequest(cfs: Cashflow[]): string;
+        export function makeRequest(cfs: Cashflow[], start: string): string;
 
         export function genChartInput(as: Allocation[], cfs: Cashflow[]): any[][];
 

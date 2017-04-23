@@ -24,6 +24,8 @@ lazy val shared = (project in file("mforecast-shared"))
     target in Compile := baseDirectory.value / ".." / "target" / name.value,
     target in Test := baseDirectory.value / ".." / "target" / name.value,
     artifactPath in(Compile, fastOptJS) :=
+      baseDirectory.value / ".." / "dist" / s"${ name.value }.js",
+    artifactPath in(Compile, fullOptJS) :=
       baseDirectory.value / ".." / "dist" / s"${ name.value }.js"
   )
 

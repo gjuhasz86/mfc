@@ -63,7 +63,7 @@ export class AppComponent {
         console.log(`pars: ${start} ${period}`);
         let cfs0: Cashflow[][] = cfspecs.map(c => Mfc.rollout(c, start, period));
         let cfs: Cashflow[] = [].concat.apply([], cfs0);
-        let req = Mfc.makeRequest(cfs);
+        let req = Mfc.makeRequest(cfs, start);
         console.log(`Sending ${new Date()}`);
         return this.mfcSvc.plan(req).map(r => [cfs, r]);
     }
