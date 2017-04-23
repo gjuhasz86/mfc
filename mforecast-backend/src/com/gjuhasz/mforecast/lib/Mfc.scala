@@ -55,15 +55,26 @@ object Mfc {
         val (initial, allocations) =
           plan(date, earnings, currSpendings, allocated(category), defaultAccount)
 
-        val newEarnings = (earnings zip allocations).map {
+        assert(allocations.size % earnings.size == 0, "Allocations' size should be the multiple of the earnigns' size")
+
+
+        val newEarnings = (Stream.continually(earnings).flatten zip allocations).toList.map {
           case ((earning, unallocated), allc) =>
             (earning, unallocated - allc.amount)
         }
+//        val newEarnings = earnings.map { case (earning, unallocated) =>
+//          val allcd = allocations
+//            .filter(_.allocated == earning.date)
+//            .filter(_.account == earning.account)
+//            .map(_.amount).sum
+//          (earning, unallocated - allcd)
+//        }
 
         initial ::: allocations ::: plan(date, newEarnings, spendingTail, defaultAccount, allocated)
     }
 
-
+  // plans for a single category
+  // guarantees that the size of the result will be the same as the size of the earnings
   def plan(
     date: LocalDate,
     earnings: List[(Earning, Int)],
@@ -71,50 +82,50 @@ object Mfc {
     allocated: Int,
     defaultAcc: Account
   ): (List[Allocation], List[Allocation]) =
-    spendings match {
-      case Nil => (Nil, Nil)
-      case spending :: spendingsTail =>
-        val earningItems =
-          earnings
-            .map {
-              case (eng, unall) if eng.date > spending.date.prevMonthEnd =>
-                EarningItem(eng.amount, 0)
-              case (eng, unall) =>
-                EarningItem(eng.amount, unall)
-            }
-        val allocationRes = allocate(earningItems, allocated, spending.amount)
+  spendings match {
+    case Nil => (Nil, Nil)
+    case spending :: spendingsTail =>
+      val earningItems =
+        earnings
+          .map {
+            case (eng, unall) if eng.date > spending.date.prevMonthEnd =>
+              EarningItem(eng.amount, 0)
+            case (eng, unall) =>
+              EarningItem(eng.amount, unall)
+          }
+      val allocationRes = allocate(earningItems, allocated, spending.amount)
 
-        val initAlloc =
+      val initAlloc =
+        Allocation(
+          allocated = date,
+          expiry = spending.date.prevMonthEnd,
+          account = defaultAcc,
+          category = spending.category,
+          amount = allocationRes.initial)
+
+      val allocations = (earnings zip allocationRes.allocations).map {
+        case ((earning, unallocated), amount) =>
           Allocation(
-            allocated = date,
+            allocated = earning.date,
             expiry = spending.date.prevMonthEnd,
-            account = defaultAcc,
+            account = earning.account,
             category = spending.category,
-            amount = allocationRes.initial)
+            amount = amount)
 
-        val allocations = (earnings zip allocationRes.allocations).map {
-          case ((earning, unallocated), amount) =>
-            Allocation(
-              allocated = earning.date,
-              expiry = spending.date.prevMonthEnd,
-              account = earning.account,
-              category = spending.category,
-              amount = amount)
+      }
 
-        }
+      val newEarnings = (earnings zip allocationRes.allocations).map {
+        case ((earning, unallocated), amount) =>
+          (earning, unallocated - amount)
+      }
+      val newAllocated = min(allocated - allocationRes.initial, 0)
 
-        val newEarnings = (earnings zip allocationRes.allocations).map {
-          case ((earning, unallocated), amount) =>
-            (earning, unallocated - amount)
-        }
-        val newAllocated = min(allocated - allocationRes.initial, 0)
+      val currentRes = initAlloc :: allocations
+      val (initTailAlloc, tailAllocations) =
+        plan(date, newEarnings, spendingsTail, newAllocated, defaultAcc)
 
-        val currentRes = initAlloc :: allocations
-        val (initTailAlloc, tailAllocations) =
-          plan(date, newEarnings, spendingsTail, newAllocated, defaultAcc)
-
-        (initAlloc :: initTailAlloc, allocations ::: tailAllocations)
-    }
+      (initAlloc :: initTailAlloc, allocations ::: tailAllocations)
+  }
 
 
   case class AllocationResult(initial: Int, allocations: List[Int])
@@ -123,6 +134,10 @@ object Mfc {
     def asTuple: (Int, Int) = (full, unallocated)
     def allocated: Int = full - unallocated
   }
+  object EarningItem {
+    def fromAu(allocated: Int, unallocated: Int) = EarningItem(allocated + unallocated, unallocated)
+  }
+
 
   def allocate(earnings: List[EarningItem], allocated: Int, spending: Int): AllocationResult = {
     if (allocated >= spending) {
@@ -154,6 +169,7 @@ object Mfc {
   def findTarget(input: List[(Int, Int)], amount: Int): List[Int] = {
     require(amount >= 0, s"Negative amount is not supported [$amount]")
     val (full, allocated) = input.unzip
+    require(allocated.forall(_ >= 0), s"Negative allocation is not supported [$allocated]")
     val initialTargets = distribute(full, allocated.sum + amount)
 
     val tempTargets = allocated zip initialTargets

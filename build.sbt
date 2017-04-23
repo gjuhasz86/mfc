@@ -21,7 +21,8 @@ lazy val backend = (project in file("mforecast-backend"))
 lazy val shared = (project in file("mforecast-shared"))
   .settings(
     resourceDirectory in Compile := baseDirectory.value / "resources",
-    target := baseDirectory.value / ".." / "target" / name.value,
+    target in Compile := baseDirectory.value / ".." / "target" / name.value,
+    target in Test := baseDirectory.value / ".." / "target" / name.value,
     artifactPath in(Compile, fastOptJS) :=
       baseDirectory.value / ".." / "dist" / s"${ name.value }.js"
   )
