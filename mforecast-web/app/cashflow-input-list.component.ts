@@ -11,30 +11,33 @@ import {BehaviorSubject} from 'rxjs/BehaviorSubject';
     template: `
       <div>
         <div class="input-box">
-          <span>Start date:</span>
+          <span>Plan date:</span>
           <input #tbStart type="text"
-                 [ngModel]="start|async" size="20"
+                 [ngModel]="start|async" size="9"
                  (keyup)="start.next(tbStart.value)">
+        </div>
+        <div class="input-box">
+          <span>Relative start date: {{relativeStart | async}}</span>
         </div>
 
         <div class="input-box">
           <span>Forecast period:</span>
           <input #tbPeriod type="text"
-                 [ngModel]="forecastPeriod|async" size="20"
+                 [ngModel]="forecastPeriod|async" size="4"
                  (keyup)="forecastPeriod.next(tbPeriod.value)">
         </div>
 
-        <div class="flex">
-          <div class="cashflow-box">
+        <div class="flex cashflow-view">
+          <div class="cashflow-input">
           <textarea #taCashflow type="text" rows="15" cols="60"
                     [ngModel]="bulkTexts|async"
                     (keyup)="handleBulkChange(taCashflow.value)"></textarea>
           </div>
-          <div class="cashflow-box divTable">
+          <div class="cashflow-result divTable">
             <div class="divRow"
                  *ngFor="let c of (preCashflows|async)">
-              <div *ngIf="c.empty">empty</div>
-              <div *ngIf="!c.empty && !c.valid">invalid</div>
+              <div *ngIf="c.empty" class="divCell">&nbsp;</div>
+              <div *ngIf="!c.empty && !c.valid" class="divCell invalid">Invalid</div>
               <div *ngIf="c.valid" class="divCell verb">
                 <span *ngIf="c.valid && c.earn" class="earn">Earn</span>
                 <span *ngIf="c.valid && !c.earn" class="spend">Spend</span>
@@ -60,7 +63,7 @@ import {BehaviorSubject} from 'rxjs/BehaviorSubject';
           </div>
         </div>
         <div>
-          <div class="cashflow-box divTable">
+          <div class="divTable">
             <div class="divRow" *ngFor="let c of (rolled|async)">
               <div class="divCell">{{c.date}}</div>
               <div class="divCell">{{c.catOrAcc}}</div>
@@ -109,6 +112,7 @@ export class CashflowInputListComponent {
 
     start0 = new BehaviorSubject<string>(this.today());
     @Output() start = this.start0.filter(x => Mfc.validateLocalDate(x));
+    @Output() relativeStart = this.start.map(x => Mfc.nextMonthStart(x));
 
 
     forecastPeriod0 = new BehaviorSubject<string>('10y');

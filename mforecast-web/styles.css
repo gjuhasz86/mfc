@@ -18,8 +18,20 @@ h1 {
     display: flex;
 }
 
-.cashflow-box {
+.cashflow-view {
     padding: 20px;
+}
+
+.cashflow-input {
+    padding-right: 20px;
+}
+
+.cashflow-result {
+    padding: 3px;
+}
+
+.parsed-box {
+    padding: 3px;
 }
 
 .divTable {
@@ -33,6 +45,10 @@ h1 {
 .divCell {
     display: table-cell;
     padding: 0px 10px;
+}
+
+.divCell.invalid {
+    color: red;
 }
 
 .divCell.verb .earn {

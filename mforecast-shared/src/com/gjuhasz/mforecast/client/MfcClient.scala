@@ -110,11 +110,14 @@ object MfcClient {
       .map(_.toJs)
       .toJSArray
 
+  def nextMonthStart(str: String): String =
+    str.d.plusMonths(1).withDayOfMonth(1).toString
+
   def rollout(c: CashflowSpec, startStr: String, periodStr: String): js.Array[Cashflow] = {
     //    val start = "2017-01-01".d
     //    val forecastPeriod = 10.years
 
-    val start = startStr.d
+    val start = nextMonthStart(startStr).d
     val forecastPeriod = parsePeriod(periodStr)
     val dsl = Dsl(start, forecastPeriod)
     import dsl._

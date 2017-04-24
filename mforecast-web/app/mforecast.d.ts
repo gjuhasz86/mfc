@@ -11,6 +11,8 @@ declare module 'mforecast' {
 
         export function validateLocalDate(str: string): boolean;
 
+        export function nextMonthStart(str: string): string;
+
         export function validatePeriod(str: string): boolean;
 
         export function rollout(c: CashflowSpec, start: string, period: string): Cashflow[];
