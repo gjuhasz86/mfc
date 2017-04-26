@@ -10,7 +10,7 @@ gulp.task('webserver', function () {
         middleware: function(connect, opt) {
             return [
                 proxy('/api', {
-                    target: 'http://localhost:8080',
+                    target: process.env.BACKEND_ADDR ? process.env.BACKEND_ADDR : 'http://localhost:8080',
                     changeOrigin: true
                 })
             ]
