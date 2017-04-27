@@ -1,0 +1,20 @@
+version: '3'
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: dockerfile-rpi
+    ports:
+      - "8080:8080"
+    command: sbt run
+  web:
+    environment:
+      - BACKEND_ADDR=http://backend:8080
+    build:
+      context: .
+      dockerfile: dockerfile-rpi
+    command: sbt gulpServe
+    ports:
+      - "9000:9000"
+    depends_on:
+      - backend
