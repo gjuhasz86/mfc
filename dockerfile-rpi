@@ -92,4 +92,23 @@ RUN set -ex \
   && chmod +x /usr/local/bin/yarn
 
 
+WORKDIR /
+RUN wget https://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/0.13.15/sbt-launch.jar
+RUN mkdir /usr/lib/sbt
+RUN mv sbt-launch.jar /usr/lib/sbt
+RUN touch /bin/sbt
+RUN echo '#!/bin/sh' > /bin/sbt
+RUN echo 'java -server -Xmx512M -jar /usr/lib/sbt/sbt-launch.jar "$@"' >> /bin/sbt
+RUN chmod +x /bin/sbt
+RUN update-ca-certificates -f
+RUN sbt --version
+
+RUN mkdir repo
+
+WORKDIR ./repo
+ADD . /repo
+
+RUN sbt compile
+RUN sbt npmInstall
+
 CMD ["bash"]
