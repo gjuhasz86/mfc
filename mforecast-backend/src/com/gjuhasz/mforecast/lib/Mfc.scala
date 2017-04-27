@@ -4,12 +4,13 @@ import java.time.LocalDate
 
 import com.gjuhasz.mforecast.shared.lib.Utils._
 import com.gjuhasz.mforecast.shared.model._
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.collection.immutable.Nil
 import scala.math.Ordering.Implicits._
 import scala.math.min
 
-object Mfc {
+object Mfc extends LazyLogging {
 
   def withDefaultAccount(acc: Account) = new {
     def plan(
@@ -52,6 +53,7 @@ object Mfc {
     spendings match {
       case Nil => Nil
       case (category, currSpendings) :: spendingTail =>
+        logger.info(s"Categories left: [${ spendings.size }]")
         val (initial, allocations) =
           plan(date, earnings, currSpendings, allocated(category), defaultAccount)
 
@@ -79,6 +81,7 @@ object Mfc {
   spendings match {
     case Nil => (Nil, Nil)
     case spending :: spendingsTail =>
+      logger.info(s"Spending left in category: [${ spendings.size }]")
       val earningItems =
         earnings
           .map {

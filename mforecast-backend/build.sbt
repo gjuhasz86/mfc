@@ -9,6 +9,9 @@ libraryDependencies += "org.scala-lang.modules" % "scala-java8-compat_2.12" % "0
 libraryDependencies += "org.scalatest" % "scalatest_2.12" % "3.0.1"
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
 
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.7"
+libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0"
+
 libraryDependencies += "com.typesafe.akka" %% "akka-http-core" % "10.0.3"
 libraryDependencies += "com.typesafe.akka" %% "akka-http" % "10.0.3"
 libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit" % "10.0.3"
