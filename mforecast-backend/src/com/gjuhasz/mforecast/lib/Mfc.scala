@@ -50,25 +50,33 @@ object Mfc extends LazyLogging {
     spendings: List[(Category, List[Spending])],
     defaultAccount: Account,
     allocated: Map[Category, Int]
-  ): List[Allocation] =
-    spendings match {
-      case Nil => Nil
-      case (category, currSpendings) :: spendingTail =>
-        logger.info(s"Categories left: [${ spendings.size }]")
-        val (initial, allocations) =
-          plan(date, earnings, currSpendings, allocated(category), defaultAccount)
+  ): List[Allocation] = {
+    def loop(
+      acc: List[Allocation],
+      earnings: List[(Earning, Int)],
+      spendings: List[(Category, List[Spending])]
+    ): List[Allocation] = {
+      spendings match {
+        case Nil => acc
+        case (category, currSpendings) :: spendingTail =>
+          logger.info(s"Categories left: [${ spendings.size }]")
+          val (initial, allocations) =
+            plan(date, earnings, currSpendings, allocated(category), defaultAccount)
 
-        assert(allocations.size % earnings.size == 0, "Allocations' size should be the multiple of the earnigns' size")
+          assert(allocations.size % earnings.size == 0, "Allocations' size should be the multiple of the earnigns' size")
 
-        // the n-th allocation corresponds to the (n mod earnings.size)-th earning
-        val allocationMatrix = allocations.grouped(earnings.size).toList.transpose
-        val newEarnings = (earnings zip allocationMatrix).map {
-          case ((earning, unallocated), allocs) =>
-            (earning, unallocated - allocs.map(_.amount).sum)
-        }
+          // the n-th allocation corresponds to the (n mod earnings.size)-th earning
+          val allocationMatrix = allocations.grouped(earnings.size).toList.transpose
+          val newEarnings = (earnings zip allocationMatrix).map {
+            case ((earning, unallocated), allocs) =>
+              (earning, unallocated - allocs.map(_.amount).sum)
+          }
 
-        initial ::: allocations ::: plan(date, newEarnings, spendingTail, defaultAccount, allocated)
+          loop(acc ::: initial ::: allocations, newEarnings, spendingTail)
+      }
     }
+    loop(Nil, earnings, spendings)
+  }
 
   // plans for a single category
   // guarantees that the size of the result will be a multiple of the size of the earnings
@@ -78,53 +86,59 @@ object Mfc extends LazyLogging {
     spendings: List[Spending],
     allocated: Int,
     defaultAcc: Account
-  ): (List[Allocation], List[Allocation]) =
-  spendings match {
-    case Nil => (Nil, Nil)
-    case spending :: spendingsTail =>
-      logger.info(s"Spending left in category: [${ spendings.size }]")
-      val earningItems =
-        earnings
-          .map {
-            case (eng, unall) if eng.date > spending.date.prevMonthEnd =>
-              EarningItem(eng.amount, 0)
-            case (eng, unall) =>
-              EarningItem(eng.amount, unall)
+  ): (List[Allocation], List[Allocation]) = {
+    def loop(
+      accInitAllocs: List[Allocation],
+      accAllocs: List[Allocation],
+      earnings: List[(Earning, Int)],
+      spendings: List[Spending],
+      allocated: Int
+    ): (List[Allocation], List[Allocation]) = {
+      spendings match {
+        case Nil => (accInitAllocs, accAllocs)
+        case spending :: spendingsTail =>
+          logger.info(s"Spending left in category: [${ spendings.size }]")
+          val earningItems =
+            earnings
+              .map {
+                case (eng, unall) if eng.date > spending.date.prevMonthEnd =>
+                  EarningItem(eng.amount, 0)
+                case (eng, unall) =>
+                  EarningItem(eng.amount, unall)
+              }
+          val allocationRes = allocate(earningItems, allocated, spending.amount)
+
+          val initAlloc =
+            Allocation(
+              allocated = date,
+              expiry = spending.date.prevMonthEnd,
+              account = defaultAcc,
+              category = spending.category,
+              amount = allocationRes.initial)
+
+          val allocations = (earnings zip allocationRes.allocations).map {
+            case ((earning, unallocated), amount) =>
+              Allocation(
+                allocated = earning.date,
+                expiry = spending.date.prevMonthEnd,
+                account = earning.account,
+                category = spending.category,
+                amount = amount)
+
           }
-      val allocationRes = allocate(earningItems, allocated, spending.amount)
 
-      val initAlloc =
-        Allocation(
-          allocated = date,
-          expiry = spending.date.prevMonthEnd,
-          account = defaultAcc,
-          category = spending.category,
-          amount = allocationRes.initial)
+          val newEarnings = (earnings zip allocationRes.allocations).map {
+            case ((earning, unallocated), amount) =>
+              (earning, unallocated - amount)
+          }
+          val newAllocated = min(allocated - allocationRes.initial, 0)
 
-      val allocations = (earnings zip allocationRes.allocations).map {
-        case ((earning, unallocated), amount) =>
-          Allocation(
-            allocated = earning.date,
-            expiry = spending.date.prevMonthEnd,
-            account = earning.account,
-            category = spending.category,
-            amount = amount)
-
+          //      val currentRes = initAlloc :: allocations
+          loop(accInitAllocs :+ initAlloc, accAllocs ::: allocations, newEarnings, spendingsTail, newAllocated)
       }
-
-      val newEarnings = (earnings zip allocationRes.allocations).map {
-        case ((earning, unallocated), amount) =>
-          (earning, unallocated - amount)
-      }
-      val newAllocated = min(allocated - allocationRes.initial, 0)
-
-      val currentRes = initAlloc :: allocations
-      val (initTailAlloc, tailAllocations) =
-        plan(date, newEarnings, spendingsTail, newAllocated, defaultAcc)
-
-      (initAlloc :: initTailAlloc, allocations ::: tailAllocations)
+    }
+    loop(Nil, Nil, earnings, spendings, allocated)
   }
-
 
   case class AllocationResult(initial: Int, allocations: List[Int])
 
