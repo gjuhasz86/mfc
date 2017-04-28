@@ -6,6 +6,7 @@ import com.gjuhasz.mforecast.shared.lib.Utils._
 import com.gjuhasz.mforecast.shared.model._
 import com.typesafe.scalalogging.LazyLogging
 
+import scala.annotation.tailrec
 import scala.collection.immutable.Nil
 import scala.math.Ordering.Implicits._
 import scala.math.min
@@ -163,35 +164,47 @@ object Mfc extends LazyLogging {
     AllocationResult(initial, allocations)
   }
 
+
   def findTarget(input: List[(Int, Int)], amount: Int): List[Int] = {
     require(amount >= 0, s"Negative amount is not supported [$amount]")
-    val (full, allocated) = input.unzip
-    require(allocated.forall(_ >= 0), s"Negative allocation is not supported [$allocated]")
-    val initialTargets = distribute(full, allocated.sum + amount)
+    val (full0, allocated0) = input.unzip
+    require(allocated0.forall(_ >= 0), s"Negative allocation is not supported [$allocated0]")
 
-    val tempTargets = allocated zip initialTargets
+    @tailrec
+    def loop(ignore: List[Boolean]): List[Int] = {
+      val (full, allocated) = (ignore zip input)
+        .map { case (i, x) => if (i) (0, 0) else x }
+        .unzip
 
-    if (tempTargets.exists { case (allocd, target) => allocd > target }) {
-      val newAllocated =
-        (full zip tempTargets).map { case (f, (allocd, target)) =>
-          if (allocd > target) (0, 0) else (f, allocd)
-        }
-      val res0 = findTarget(newAllocated, amount)
+      val sum = allocated.sum + amount
+//      require(sum <= Int.MaxValue, s"Amount is too high [$sum]")
 
-      (res0 zip tempTargets).map { case (r, (allocd, target)) =>
-        if (allocd > target) allocd else r
+      val targets = distribute(full, sum.toInt)
+      val tempTargets = allocated zip targets
+
+      val nextIgnore = (ignore zip tempTargets)
+        .map { case (ig, (allocd, target)) => ig || allocd > target }
+
+      if (nextIgnore == ignore) {
+        (ignore zip (allocated0 zip targets))
+          .map { case (i, (a, t)) => if (i) a else Math.max(a, t) }
+      } else {
+        loop(nextIgnore)
       }
-    } else {
-      initialTargets
     }
+
+    loop(input.map(_ => false))
   }
 
-  def distribute(list: List[Int], n: Int): List[Int] = list match {
-    case Nil => Nil
-    case lst if lst.sum == 0 => distribute(lst.map(_ => 1), n)
-    case head :: tail =>
-      val h = Math.ceil(n * (head.toDouble / list.map(_.toLong).sum)).toInt
-      h :: distribute(tail, n - h)
+  def distribute(list: List[Int], n: Int): List[Int] = {
+    def loop(acc: List[Int], list: List[Int], n: Int): List[Int] = list match {
+      case Nil => acc
+      case lst if lst.sum == 0 => loop(acc, lst.map(_ => 1), n)
+      case head :: tail =>
+        val h = Math.ceil(n * (head.toDouble / list.map(_.toLong).sum)).toInt
+        loop(h :: acc, tail, n - h)
+    }
+    loop(Nil, list, n).reverse
   }
 
 

@@ -59,4 +59,18 @@ class MfcFindTargetSuite extends FlatSpec with Matchers {
   it should "ignore the items higher than the average #3" in {
     findTarget(List((2, 4), (1, 8), (0, 0), (0, 0)), 4) shouldBe List(8, 8, 0, 0)
   }
+
+  it should "ignore the items higher than the average #4" in {
+    findTarget(List((1, 1), (1, 26), (1, 14), (1, 1)), 17) shouldBe List(10, 26, 14, 9)
+  }
+
+  ignore should "throw if the sum overflows the int range" in {
+    val thrown = the[IllegalArgumentException] thrownBy findTarget(List((973870019, 453851887)), 2147483647)
+    thrown.getMessage shouldBe "Amount is too high [2601335534]"
+  }
+
+  ignore should "throw if the sum overflows the int range 0" in {
+    val thrown = the[IllegalArgumentException] thrownBy findTarget(List((2, 1), (1268806567, 1268806567), (358242325, 1), (2147483647, 2147483647), (2147483647, 2147483647), (2147483647, 0)), 21595601)
+    thrown.getMessage shouldBe "Amount is too high [???]"
+  }
 }
