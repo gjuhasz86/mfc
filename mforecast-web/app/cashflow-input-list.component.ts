@@ -55,19 +55,30 @@ import {BehaviorSubject} from 'rxjs/BehaviorSubject';
                   {{c.parsed.dueValue}} {{c.duePlural ? c.parsed.dueUnit.plural : c.parsed.dueUnit.singular}}</span>
                 <span *ngIf="!c.hasDue">today</span>
               </div>
-              <div *ngIf="c.valid" class="divCell fill">repeated every</div>
-              <div *ngIf="c.valid" class="divCell period">
-                {{c.parsed.periodValue}} {{c.perPlural ? c.parsed.periodUnit.plural : c.parsed.periodUnit.singular}}
+              <div *ngIf="c.valid" class="divCell fill">
+                <span *ngIf="c.hasPer">repeated every</span>
               </div>
-              <div *ngIf="c.valid" class="divCell fill">for</div>
+              <div *ngIf="c.valid" class="divCell period">
+                <span *ngIf="c.hasPer">
+                  {{c.parsed.periodValue}} {{c.perPlural ? c.parsed.periodUnit.plural : c.parsed.periodUnit.singular}}</span>
+                <span *ngIf="!c.hasPer">once</span>
+              </div>
+              <div *ngIf="c.valid" class="divCell fill">
+                <span *ngIf="c.hasPer">for</span>
+              </div>
               <div *ngIf="c.valid" class="divCell due">
                 <span *ngIf="c.hasLen">
                   {{c.parsed.lenValue}} {{c.lenPlural ? c.parsed.lenUnit.plural : c.parsed.lenUnit.singular}}</span>
-                <span *ngIf="!c.hasLen">ethernity</span>
+                <span *ngIf="!c.hasLen && c.hasPer">ethernity</span>
               </div>
             </div>
           </div>
         </div>
+
+        <pre>    (s|e) &lt;amount&gt; on &lt;category|account&gt; [in &lt;period&gt;] [x &lt;period&gt; [for &lt;period&gt;]]
+    period: &lt;N&gt; (d|w|m|y)</pre>
+
+
         <div>
           <div class="divTable">
             <div class="divRow" *ngFor="let c of (rolled|async)">
@@ -87,16 +98,21 @@ import {BehaviorSubject} from 'rxjs/BehaviorSubject';
 export class CashflowInputListComponent {
 
     private init = [
-        's 60000 on Travel in 130d x 99y',
-        's 30000 on Rent in 160d x 99y',
-        's 120000 on Car in 190d x 99y',
-        'e 100000 on Default in 5d x 99y',
-        'e 200000 on Default in 35d x 99y',
-        'e 100000 on Default in 65d x 99y',
-        'e 100000 on Default in 95d x 99y',
-        'e 100000 on Default in 125d x 99y',
-        'e 100000 on Default in 155d x 99y',
-        'e 100000 on Default in 185d x 99y'
+        // 's 60000 on Travel in 130d x 99y',
+        // 's 30000 on Rent in 160d x 99y',
+        // 's 120000 on Car in 190d x 99y',
+        // 'e 100000 on Default in 5d x 99y',
+        // 'e 200000 on Default in 35d x 99y',
+        // 'e 100000 on Default in 65d x 99y',
+        // 'e 100000 on Default in 95d x 99y',
+        // 'e 100000 on Default in 125d x 99y',
+        // 'e 100000 on Default in 155d x 99y',
+        // 'e 100000 on Default in 185d x 99y'
+        'e 100000 on Current x 1m',
+        '',
+        's 8000 on Living x 2w',
+        's 28500 on Qtly-Bkv in 45d x 100d',
+        's 30000 on Renovation in 4m x 1m for 6m'
     ];
 
     private changes = new BehaviorSubject<((ss: string[]) => string[])>(x => this.init);
@@ -121,7 +137,7 @@ export class CashflowInputListComponent {
     @Output() relativeStart = this.start.map(x => Mfc.nextMonthStart(x));
 
 
-    forecastPeriod0 = new BehaviorSubject<string>('10y');
+    forecastPeriod0 = new BehaviorSubject<string>('2y');
     @Output() forecastPeriod = this.forecastPeriod0.filter(x => Mfc.validatePeriod(x));
 
     rolled = Observable.combineLatest(this.cashflows, this.start, this.forecastPeriod,
@@ -174,14 +190,16 @@ export class CashflowInputListComponent {
         let parsed = Mfc.parseCashflow(x);
         let valid = !(parsed == null);
         let hasDue = valid && !(parsed.dueValue == null);
+        let hasPer = valid && !(parsed.periodValue == null);
         let hasLen = valid && !(parsed.lenValue == null);
         return {
             str: x,
             empty: x === '',
             parsed: parsed,
             valid: valid,
-            perPlural: valid && parsed.periodValue !== 1,
             earn: valid && parsed.verb === 'earn',
+            hasPer: hasPer,
+            perPlural: valid && parsed.periodValue !== 1,
             hasDue: hasDue,
             duePlural: hasDue && parsed.dueValue !== 1,
             hasLen: hasLen,

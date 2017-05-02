@@ -108,8 +108,8 @@ sealed trait CashflowSpec extends js.Object {
   def catOrAcc: String
   def dueValue: js.UndefOr[Int]
   def dueUnit: js.UndefOr[PeriodUnit]
-  def periodValue: Int
-  def periodUnit: PeriodUnit
+  def periodValue: js.UndefOr[Int]
+  def periodUnit: js.UndefOr[PeriodUnit]
   def lenValue: js.UndefOr[Int]
   def lenUnit: js.UndefOr[PeriodUnit]
 }
@@ -120,30 +120,29 @@ object CashflowSpec {
   def createTyped(
     verb: String, amount: Int, catOrAcc: String,
     dueValue: Option[Int], dueUnit: Option[PeriodUnit],
-    periodValue: Int, periodUnit: PeriodUnit,
+    periodValue: Option[Int], periodUnit: Option[PeriodUnit],
     lenValue: Option[Int], lenUnit: Option[PeriodUnit]
   ): Option[CashflowSpec] = verb match {
     case "e" | "earn" =>
-      Some(new IncomeSpec(amount, catOrAcc, dueValue.orUndefined, dueUnit.orUndefined, periodValue, periodUnit, lenValue.orUndefined, lenUnit.orUndefined))
+      Some(new IncomeSpec(amount, catOrAcc, dueValue.orUndefined, dueUnit.orUndefined, periodValue.orUndefined, periodUnit.orUndefined, lenValue.orUndefined, lenUnit.orUndefined))
     case "s" | "spend" =>
-      Some(new ExpenseSpec(amount, catOrAcc, dueValue.orUndefined, dueUnit.orUndefined, periodValue, periodUnit, lenValue.orUndefined, lenUnit.orUndefined))
+      Some(new ExpenseSpec(amount, catOrAcc, dueValue.orUndefined, dueUnit.orUndefined, periodValue.orUndefined, periodUnit.orUndefined, lenValue.orUndefined, lenUnit.orUndefined))
     case _ => None
   }
 
   def create(
     verb: String, amount: String, catOrAcc: String,
     due: String, dueUnitStr: String,
-    periodValue: String, periodUnitStr: String,
+    per: String, perUnitStr: String,
     len: String, lenUnitStr: String
   ): Option[CashflowSpec] = {
-    val x2 = Try(amount.toInt).toOption
-    val x3 = Try(periodValue.toInt).toOption
-    val x4 = PeriodUnit.unapply(periodUnitStr)
-
-    val x5 = Try(Option(due).map(_.toInt)).toOption
-
     val duOpt = Option(dueUnitStr) match {
       case Some(du) => PeriodUnit.unapply(du).map(Some(_))
+      case None => Some(None)
+    }
+
+    val puOpt = Option(perUnitStr) match {
+      case Some(pu) => PeriodUnit.unapply(pu).map(Some(_))
       case None => Some(None)
     }
 
@@ -156,11 +155,11 @@ object CashflowSpec {
       am <- Try(amount.toInt).toOption
       d <- Try(Option(due).map(_.toInt)).toOption
       du <- duOpt
-      per <- Try(periodValue.toInt).toOption
-      pu <- PeriodUnit.unapply(periodUnitStr)
+      p <- Try(Option(per).map(_.toInt)).toOption
+      pu <- puOpt
       l <- Try(Option(len).map(_.toInt)).toOption
       lu <- luOpt
-      res <- createTyped(verb, am, catOrAcc, d, du, per, pu, l, lu)
+      res <- createTyped(verb, am, catOrAcc, d, du, p, pu, l, lu)
     } yield res
   }
 
@@ -172,8 +171,8 @@ class IncomeSpec(
   override val catOrAcc: String,
   override val dueValue: UndefOr[Int],
   override val dueUnit: UndefOr[PeriodUnit],
-  override val periodValue: Int,
-  override val periodUnit: PeriodUnit,
+  override val periodValue: UndefOr[Int],
+  override val periodUnit: UndefOr[PeriodUnit],
   override val lenValue: UndefOr[Int],
   override val lenUnit: UndefOr[PeriodUnit]) extends CashflowSpec {
   override def verb: String = "earn"
@@ -185,8 +184,8 @@ class ExpenseSpec(
   override val catOrAcc: String,
   override val dueValue: UndefOr[Int],
   override val dueUnit: UndefOr[PeriodUnit],
-  override val periodValue: Int,
-  override val periodUnit: PeriodUnit,
+  override val periodValue: UndefOr[Int],
+  override val periodUnit: UndefOr[PeriodUnit],
   override val lenValue: UndefOr[Int],
   override val lenUnit: UndefOr[PeriodUnit]) extends CashflowSpec {
   override def verb: String = "spend"

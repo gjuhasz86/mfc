@@ -71,11 +71,11 @@ object MfcClient {
     mfcArgs.asJson.noSpaces
   }
 
-  private val CfRe = """([se]) +([0-9]+) +on +([^ ]+)( in ([0-9]+) *([^ ]+))? +x +([0-9]+) *?([^ ]+)( for ([0-9]+) *([^ ]+))?""".r
+  private val CfRe = """ *([se]) +([0-9]+) +on +([^ ]+)( +in +([0-9]+) *([^ ]+))?( +x +([0-9]+) *([^ ]+)( +for +([0-9]+) *([^ ]+))?)? *""".r
   def parseCashflow(cfStr: String): js.UndefOr[CashflowSpec] = {
     cfStr match {
-      case CfRe(sr, am, cat, _, due, dueUnit, per, perUnit, _, len, lenUnit) =>
-        CashflowSpec.create(sr, am, cat, due, dueUnit, per, perUnit, len, lenUnit).orUndefined
+      case CfRe(se, am, cat, _, due, dueUnit, _, per, perUnit, _, len, lenUnit) =>
+        CashflowSpec.create(se, am, cat, due, dueUnit, per, perUnit, len, lenUnit).orUndefined
       case x =>
         js.undefined
     }
@@ -121,13 +121,6 @@ object MfcClient {
     val forecastPeriod = parsePeriod(periodStr)
     val end = start.plus(forecastPeriod)
 
-    val per = c.periodUnit.short match {
-      case "d" => c.periodValue.days
-      case "w" => c.periodValue.weeks
-      case "m" => c.periodValue.months
-      case "y" => c.periodValue.years
-    }
-
     val due = (c.dueValue.toOption, c.dueUnit.map(_.short).toOption) match {
       case (Some(d), Some("d")) => d.days
       case (Some(d), Some("w")) => d.weeks
@@ -135,6 +128,15 @@ object MfcClient {
       case (Some(d), Some("y")) => d.years
       case (None, None) => 0.days
       case (v, u) => throw new IllegalStateException(s"Inconsistent due value and unit: [$v] and [$u]")
+    }
+
+    val perOpt = (c.periodValue.toOption, c.periodUnit.map(_.short).toOption) match {
+      case (Some(p), Some("d")) => Some(p.days)
+      case (Some(p), Some("w")) => Some(p.weeks)
+      case (Some(p), Some("m")) => Some(p.months)
+      case (Some(p), Some("y")) => Some(p.years)
+      case (None, None) => None
+      case (v, u) => throw new IllegalStateException(s"Inconsistent per value and unit: [$v] and [$u]")
     }
 
     val len = (c.lenValue.toOption, c.lenUnit.map(_.short).toOption) match {
@@ -149,11 +151,15 @@ object MfcClient {
     val dsl = Dsl(start, len)
     import dsl._
 
-    val cashflows0: List[Cashflow] = c.verb match {
-      case "earn" =>
+    val cashflows0: List[Cashflow] = (c.verb, perOpt) match {
+      case ("earn", Some(per)) =>
         earn { c.amount } on { Account(c.catOrAcc) } due_in { due } and_every { per }
-      case "spend" =>
+      case ("earn", None) =>
+        earn { c.amount } on { Account(c.catOrAcc) } once() in { due }
+      case ("spend", Some(per)) =>
         spend { c.amount } on { Category(c.catOrAcc) } due_in { due } and_every { per }
+      case ("spend", None) =>
+        spend { c.amount } on { Category(c.catOrAcc) } once() in { due }
     }
 
     val cashflows = cashflows0.filter(_.date.isBefore(end))

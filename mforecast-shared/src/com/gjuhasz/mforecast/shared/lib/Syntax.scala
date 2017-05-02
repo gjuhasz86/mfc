@@ -42,6 +42,8 @@ object Syntax {
         def once() = new {
           def on(date: LocalDate) =
             List(Earning(date, account, amount))
+          def in(period: Period) =
+            List(Earning(start.plus(period), account, amount))
         }
         def monthly =
           (REPEAT { Earning0(account, amount) } EVERY { month } FOR { forecastPeriod } START_ON { start } ROLL OUT)
