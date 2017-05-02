@@ -45,6 +45,7 @@ h1 {
 .divCell {
     display: table-cell;
     padding: 0px 10px;
+    white-space: nowrap;
 }
 
 .divCell.invalid {
@@ -75,4 +76,30 @@ h1 {
 
 .divCell.cat {
     color: dodgerblue;
+}
+
+.hover {
+    position: relative;
+    z-index: 1;
+}
+
+.tooltip {
+    display: none;
+    position: absolute;
+    background-color: black;
+    color: white;
+    left: 0;
+    top: 20px;
+    z-index: 100;
+    border-radius: 5px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.hover:hover {
+    color: darkgrey;
+}
+
+.hover:hover .tooltip {
+    display: block;
 }

@@ -29,13 +29,29 @@ import {BehaviorSubject} from 'rxjs/BehaviorSubject';
 
         <div class="flex cashflow-view">
           <div class="cashflow-input">
-          <textarea #taCashflow type="text" rows="15" cols="60"
+          <textarea #taCashflow type="text" rows="15" cols="40"
                     [ngModel]="bulkTexts|async"
                     (keyup)="handleBulkChange(taCashflow.value)"></textarea>
           </div>
           <div class="cashflow-result divTable">
             <div class="divRow"
                  *ngFor="let c of (preCashflows|async)">
+
+              <div *ngIf="!c.empty" class="hover">
+                <i class="fa fa-search"></i>
+                <div class="tooltip">
+                  <div class="divTable">
+                    <div class="divRow" *ngFor="let cc of rolloutOne(c.parsed)">
+                      <div class="divCell">{{cc.date}}</div>
+                      <div class="divCell">
+                        <span *ngIf="cc.earn">+{{cc.amount}}</span>
+                        <span *ngIf="!cc.earn">-{{cc.amount}}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div *ngIf="c.empty" class="divCell">&nbsp;</div>
               <div *ngIf="!c.empty && !c.valid" class="divCell invalid">Invalid</div>
               <div *ngIf="c.valid" class="divCell verb">
@@ -98,16 +114,6 @@ import {BehaviorSubject} from 'rxjs/BehaviorSubject';
 export class CashflowInputListComponent {
 
     private init = [
-        // 's 60000 on Travel in 130d x 99y',
-        // 's 30000 on Rent in 160d x 99y',
-        // 's 120000 on Car in 190d x 99y',
-        // 'e 100000 on Default in 5d x 99y',
-        // 'e 200000 on Default in 35d x 99y',
-        // 'e 100000 on Default in 65d x 99y',
-        // 'e 100000 on Default in 95d x 99y',
-        // 'e 100000 on Default in 125d x 99y',
-        // 'e 100000 on Default in 155d x 99y',
-        // 'e 100000 on Default in 185d x 99y'
         'e 100000 on Current x 1m',
         '',
         's 8000 on Living x 2w',
@@ -143,6 +149,12 @@ export class CashflowInputListComponent {
     rolled = Observable.combineLatest(this.cashflows, this.start, this.forecastPeriod,
         (sp, st, p) => ({specs: sp, start: st, per: p}))
                        .map(xs => this.rollout(xs.specs, xs.start, xs.per));
+
+    private rolloutOne(spec: CashflowSpec): Cashflow[] {
+        let res = this.rollout([spec], this.start0.getValue(), this.forecastPeriod0.getValue());
+        console.log(res);
+        return res;
+    }
 
     private rollout(specs: CashflowSpec[], start: string, per: string): Cashflow[] {
         let cfs0: Cashflow[][] = specs.map(c => Mfc.rollout(c, start, per));
@@ -238,6 +250,10 @@ export class CashflowInputListComponent {
             copy.splice(i, 1);
             return copy;
         });
+    }
+
+    showClick(c: CashflowSpec): void {
+        console.log(c);
     }
 
 }
