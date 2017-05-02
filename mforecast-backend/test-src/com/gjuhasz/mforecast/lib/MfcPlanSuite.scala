@@ -78,6 +78,29 @@ class MfcPlanSuite extends FunSuite {
     assert(actual == expected)
   }
 
+  test("It should work when categories are duplicated and the first earning is in the future") {
+    val cashflows = List(
+      Earning(feb10, Current, 150),
+      Earning(mar02, Current, 150),
+      Earning(apr12, Current, 150),
+      Spending(feb10, Rent, 100),
+      Spending(mar02, Rent, 100),
+      Spending(apr12, Rent, 100),
+      Spending(may15, Rent, 100)
+    )
+
+    val expected = List(
+      Allocation(jan11, jan31, Current, Rent, 100),
+      Allocation(feb10, feb28, Current, Rent, 100),
+      Allocation(mar02, mar31, Current, Rent, 100),
+      Allocation(apr12, apr30, Current, Rent, 100)
+    )
+
+    val actual = mfc.plan(jan11, cashflows)
+      .sortBy(a => (a.allocated, a.expiry, a.account.name, a.category.name))
+    assert(actual == expected)
+  }
+
   test("It should work when earnings fall on the same date") {
     val cashflows = List(
       Earning(feb10, Current, 100),
@@ -128,7 +151,6 @@ class MfcPlanSuite extends FunSuite {
 
     Mfc.plan(start, cashflows, Current, Map().withDefaultValue(0))
   }
-
 
   private val jan01 = "2017-01-01".d
   private val jan11 = "2017-01-11".d

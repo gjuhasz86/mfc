@@ -131,7 +131,7 @@ object Mfc extends LazyLogging {
             case ((earning, unallocated), amount) =>
               (earning, unallocated - amount)
           }
-          val newAllocated = min(allocated - allocationRes.initial, 0)
+          val newAllocated = min(allocated + allocationRes.initial + allocationRes.allocations.sum, 0)
 
           //      val currentRes = initAlloc :: allocations
           loop(accInitAllocs :+ initAlloc, accAllocs ::: allocations, newEarnings, spendingsTail, newAllocated)
