@@ -46,6 +46,8 @@ declare module 'mforecast' {
         dueUnit: PeriodUnit;
         periodValue: number;
         periodUnit: PeriodUnit;
+        lenValue: number;
+        lenUnit: PeriodUnit;
     }
     export interface PeriodUnit {
         short: string;

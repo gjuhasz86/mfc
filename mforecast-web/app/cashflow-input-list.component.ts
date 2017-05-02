@@ -59,6 +59,12 @@ import {BehaviorSubject} from 'rxjs/BehaviorSubject';
               <div *ngIf="c.valid" class="divCell period">
                 {{c.parsed.periodValue}} {{c.perPlural ? c.parsed.periodUnit.plural : c.parsed.periodUnit.singular}}
               </div>
+              <div *ngIf="c.valid" class="divCell fill">for</div>
+              <div *ngIf="c.valid" class="divCell due">
+                <span *ngIf="c.hasLen">
+                  {{c.parsed.lenValue}} {{c.lenPlural ? c.parsed.lenUnit.plural : c.parsed.lenUnit.singular}}</span>
+                <span *ngIf="!c.hasLen">ethernity</span>
+              </div>
             </div>
           </div>
         </div>
@@ -168,6 +174,7 @@ export class CashflowInputListComponent {
         let parsed = Mfc.parseCashflow(x);
         let valid = !(parsed == null);
         let hasDue = valid && !(parsed.dueValue == null);
+        let hasLen = valid && !(parsed.lenValue == null);
         return {
             str: x,
             empty: x === '',
@@ -177,6 +184,8 @@ export class CashflowInputListComponent {
             earn: valid && parsed.verb === 'earn',
             hasDue: hasDue,
             duePlural: hasDue && parsed.dueValue !== 1,
+            hasLen: hasLen,
+            lenPlural: hasLen && parsed.lenValue !== 1
         };
     }
 
