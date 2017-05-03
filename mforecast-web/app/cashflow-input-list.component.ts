@@ -2,9 +2,11 @@ import {Component, Output} from '@angular/core';
 import {Cashflow, CashflowSpec, Mfc} from 'mforecast';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/scan';
+import 'rxjs/add/operator/distinctUntilChanged';
 import 'rxjs/add/observable/combineLatest';
 import {Observable} from 'rxjs/Observable';
 import {BehaviorSubject} from 'rxjs/BehaviorSubject';
+import {ReplaySubject} from 'rxjs/ReplaySubject';
 
 @Component({
     selector: 'cashflow-input-list',
@@ -31,22 +33,21 @@ import {BehaviorSubject} from 'rxjs/BehaviorSubject';
           <div class="cashflow-input">
           <textarea #taCashflow type="text" rows="15" cols="40"
                     [ngModel]="bulkTexts|async"
-                    (keyup)="handleBulkChange(taCashflow.value)"></textarea>
+                    (input)="handleBulkChange(taCashflow.value)"></textarea>
           </div>
           <div class="cashflow-result divTable">
             <div class="divRow"
-                 *ngFor="let c of (preCashflows|async)">
+                 *ngFor="let c of (preCashflows|async); trackBy: trackByFn">
 
-              <div *ngIf="!c.empty" class="hover">
+              <div *ngIf="c.valid" class="tooltip" (mouseenter)="handleShowSingleRolled(c)">
                 <i class="fa fa-search"></i>
-                <div class="tooltip">
-                  <div class="divTable">
-                    <div class="divRow" *ngFor="let cc of rolloutOne(c.parsed)">
-                      <div class="divCell">{{cc.date}}</div>
-                      <div class="divCell">
-                        <span *ngIf="cc.earn">+{{cc.amount}}</span>
-                        <span *ngIf="!cc.earn">-{{cc.amount}}</span>
-                      </div>
+                <div class="divTable tooltiptext">
+                  <div class="divRow"
+                       *ngFor="let cc of (singleRolled|async)">
+                    <div class="divCell">{{cc.date}}</div>
+                    <div class="divCell">
+                      <span *ngIf="cc.earn">+{{cc.amount}}</span>
+                      <span *ngIf="!cc.earn">-{{cc.amount}}</span>
                     </div>
                   </div>
                 </div>
@@ -131,7 +132,6 @@ export class CashflowInputListComponent {
 
     bulkTexts = this.texts.map(ts => ts.join('\n'));
 
-
     @Output() cashflows: Observable<CashflowSpec[]> = this.texts
                                                           .map(xs => xs.filter(x => x !== ''))
                                                           .map(xs => xs.map(x => Mfc.parseCashflow(x)))
@@ -146,15 +146,15 @@ export class CashflowInputListComponent {
     forecastPeriod0 = new BehaviorSubject<string>('2y');
     @Output() forecastPeriod = this.forecastPeriod0.filter(x => Mfc.validatePeriod(x));
 
+    showSingleRolled = new ReplaySubject<CashflowSpec>(1);
+    singleRolled = Observable.combineLatest(this.showSingleRolled, this.start, this.forecastPeriod,
+        (sp, st, p) => ({specs: [sp], start: st, per: p}))
+                             .map(xs => this.rollout(xs.specs, xs.start, xs.per));
+
     rolled = Observable.combineLatest(this.cashflows, this.start, this.forecastPeriod,
         (sp, st, p) => ({specs: sp, start: st, per: p}))
                        .map(xs => this.rollout(xs.specs, xs.start, xs.per));
 
-    private rolloutOne(spec: CashflowSpec): Cashflow[] {
-        let res = this.rollout([spec], this.start0.getValue(), this.forecastPeriod0.getValue());
-        console.log(res);
-        return res;
-    }
 
     private rollout(specs: CashflowSpec[], start: string, per: string): Cashflow[] {
         let cfs0: Cashflow[][] = specs.map(c => Mfc.rollout(c, start, per));
@@ -194,7 +194,7 @@ export class CashflowInputListComponent {
         return objs.findIndex(x => (typeof x) === 'undefined') === -1;
     }
 
-    public trackByFn(i: number, s: string) {
+    public trackByFn(i: number, a: any) {
         return i;
     }
 
@@ -250,6 +250,12 @@ export class CashflowInputListComponent {
             copy.splice(i, 1);
             return copy;
         });
+    }
+
+    handleShowSingleRolled(c: any): void {
+        if (c.valid) {
+            this.showSingleRolled.next(c.parsed);
+        }
     }
 
     showClick(c: CashflowSpec): void {
