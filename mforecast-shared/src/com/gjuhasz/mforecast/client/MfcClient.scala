@@ -206,14 +206,23 @@ object MfcClient {
     val months = as.map(_.allocated.withDayOfMonth(1)).distinct.sorted
     val groups = as.groupBy(a => (a.category.name, a.allocated.withDayOfMonth(1)))
 
-    val allSeries: js.Array[js.Array[Any]] = cats.map { c =>
+    val dataSeries: js.Array[js.Array[Any]] = cats.map { c =>
       val series = months.map { m =>
         groups.get((c, m)).map(_.map(_.amount).sum).getOrElse(0)
       }
       (c: Any) +: series
     }
 
-    js.Array(months.map(_.toString), allSeries)
+    val cfsGroups = cfs.collect(Cashflow.earning).groupBy(_.date.withDayOfMonth(1))
+    val sumGroups = as.groupBy(a => a.allocated.withDayOfMonth(1))
+    val unalloc = "Unallocated" +: months.map { m =>
+      val allocated = sumGroups.get(m).map(_.map(_.amount).sum).getOrElse(0)
+      val earned = cfsGroups.get(m).map(_.map(_.amount).sum).getOrElse(0)
+      val res = earned - allocated
+      if (res < 0) 0 else res
+    }
+
+    js.Array(months.map(_.toString), unalloc +: dataSeries)
   }
 
   def genAmChartInput(as: js.Array[mjs.Allocation], cfs: js.Array[Cashflow]): js.Array[Any] = {
