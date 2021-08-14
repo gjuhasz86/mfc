@@ -1,4 +1,4 @@
-lazy val nodeDir = "/home/jaysicks/.nvm/versions/node/v7.9.0/bin"
+lazy val nodeDir = "/usr/bin"
 
 // PROJECT SETTINGS //
 lazy val root = (project in file("."))

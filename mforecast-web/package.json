@@ -24,10 +24,10 @@
     "@angular/platform-browser-dynamic": "~4.0.0",
     "@angular/router": "~4.0.0",
     "@types/c3": "^0.4.41",
-    "amcharts3": "github:amcharts/amcharts3",
-    "amcharts3-angular2": "github:amcharts/amcharts3-angular2",
+    "amcharts3-angular2": "github:amcharts/amcharts3-angular2#9e213519b4af974e288fb9e2983dfa1869d2173f",
+    "amcharts3": "github:amcharts/amcharts3#2b3f84b4a304c58a8eb06ad2044410a438af9018",
     "angular-in-memory-web-api": "~0.3.0",
-    "c3": "^0.4.11",
+    "c3": "0.4.11",
     "core-js": "^2.4.1",
     "jquery": "^3.2.1",
     "mforecast-shared": "file:../dist",
@@ -52,7 +52,11 @@
     "protractor": "~4.0.14",
     "rimraf": "^2.5.4",
     "tslint": "^3.15.1",
-    "typescript": "2.2.0"
+    "typescript": "2.3.2",
+    "@types/jasmine": "2.8.6",
+    "@types/jasminewd2": "2.0.3",
+    "@types/underscore": "1.8.2",
+    "@types/node": "7.0.11"
   },
   "repository": {}
 }
